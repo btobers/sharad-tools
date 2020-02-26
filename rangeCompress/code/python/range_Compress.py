@@ -11,6 +11,7 @@ from read_Chirp import open_Chirp
 from plotting import rgram
 from read_EDR import EDR_Parse, sci_Decompress
 import warnings
+import time
 
 def blockPrint():
     sys.stdout = open(os.devnull, 'w')
@@ -123,12 +124,14 @@ def main(EDRName, auxName, lblName, chirp = 'calib', stackFac = None, beta = 0):
     # set up empty data arrays to hold Output and kaiser window of specified beta value
     if chirp =='ideal' or chirp == 'synth' or chirp == 'UPB':
         EDRData = np.zeros((3600,records), complex)
+        dechirpData = np.zeros((3600,records), complex)
         window = np.kaiser(3600, beta)
         if stackFac != 0: 
             ampStack = np.zeros((3600, stackCols))
 
     elif chirp == 'calib':
         EDRData = np.zeros((4096,records), complex)
+        dechirpData = np.zeros((4096,records), complex)
         window = np.pad(np.kaiser(2048,beta),(0,4096 - refChirpMF.shape[1]),'constant') 
         if stackFac != 0:
             ampStack = np.zeros((3600, stackCols))   
@@ -147,24 +150,31 @@ def main(EDRName, auxName, lblName, chirp = 'calib', stackFac = None, beta = 0):
         refChirpMF_pad = np.pad(refChirpMF,[(0,0),(0,4096 - refChirpMF.shape[1])], 'constant')      # zeros pad reference chirp to length 4096 prior to range compression to account for missing sample in fourier spectra
         sciPad = np.pad(sci,[(0,4096 - sci.shape[0]),(0,0)],'constant')                             # zero-pad science data to length of 4096
 
+        # take fft of zero-padded data
+        sciFFT = np.fft.fft(sciPad, axis=0)
+
         for _i in range(records):
             #-------------------
             # alternate method from PDS calinfo documentaion using reference chirp zero padded to 4096
             #-------------------
-            sciFFT = np.fft.fft(sciPad[:,_i])
-            dechirpData = (sciFFT * refChirpMF_pad[refChirpMF_index[_i],:]) * window
-            EDRData[:,_i] = np.fft.ifft(dechirpData)
+            dechirpData[:,_i] = (sciFFT[:,_i] * refChirpMF_pad[refChirpMF_index[_i],:]) * window
+        
+        EDRData = np.fft.ifft(dechirpData, axis=0)
+
 
         # truncate revised and alternate range compressed vector to 3600
         EDRData = EDRData[:3600,:]
     else:
+        # take fft of data
+        sciFFT = np.fft.fft(sci, axis=0)
+        
         for _i in range(records):
             #-------------------
             # range compression using ideal/ synthetic chirp
             #-------------------
-            sciFFT = np.fft.fft(sci[:,_i])
-            dechirpData = (sciFFT * refChirpMF) * window
-            EDRData[:,_i] = np.fft.ifft(dechirpData)
+            dechirpData[:,_i] = (sciFFT[:,_i] * refChirpMF) * window
+
+        EDRData = np.fft.ifft(dechirpData, axis=0)
 
     print('Range compression complete')
 
@@ -233,22 +243,6 @@ if __name__ == '__main__':
     # ---------------
     in_path = '/zippy/MARS/orig/supl/SHARAD/EDR/' + study_area
     out_path = '/zippy/MARS/targ/xtra/SHARAD/EDR/rangeCompress/' + study_area
-
-    # if os.getcwd().split('/')[1] == 'media':
-    #     mars_path = '/media/anomalocaris/Swaps' + mars_path
-    #     in_path = '/media/anomalocaris/Swaps' + in_path
-    #     out_path = '/media/anomalocaris/Swaps' + out_path
-    # elif os.getcwd().split('/')[1] == 'mnt':
-    #     mars_path = '/mnt/d' + mars_path
-    #     in_path = '/mnt/d' + in_path
-    #     out_path = '/mnt/d' + out_path
-    # elif os.getcwd().split('/')[1] == 'zippy':
-    #     mars_path = '/zippy' + mars_path
-    #     in_path = '/zippy' + in_path
-    #     out_path = '/zippy' + out_path
-    # else:
-    #     print('Data path not found')
-    #     sys.exit()
 
     # create necessary output directories
     try:

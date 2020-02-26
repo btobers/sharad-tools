@@ -10,7 +10,6 @@
 # $2 is the number of cores to use to process each track
 # $3 is the window size for rsr
 # $4 is the step size for rsr
-# $5 is a SHARAD surface reflectivity data file, or list of files - geom data with surface reclectivity
 
 # example postgres query to get region sref:
 #   COPY(SELECT * FROM edr.sref WHERE roi = 'fuckingBananas' ORDER BY line,trace) to '/tmp/fuckingBananas_sref.csv' WITH (FORMAT CSV, HEADER);

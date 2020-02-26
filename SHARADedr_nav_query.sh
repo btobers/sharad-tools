@@ -10,7 +10,9 @@
 
 # if multiple study regions are being investigated, run queries separately then join lists afterwards
 
-# may want to move file from /tmp/ afterwards to /zippy/MARS/targ/xtra/SHARAD/EDR/ - can't do this as user postgres
+# copy file from /tmp/ afterwards to /zippy/MARS/targ/xtra/SHARAD/EDR/ - can't do this as user postgres
+
+# cp /tmp/fname.csv /zippy/MARS/targ/xtra/SHARAD/EDR/
 
 # BST - 01_08_2020
 
